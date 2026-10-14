@@ -9,6 +9,7 @@ namespace RaceDayApi.Models
         public string Surname { get; set; }
         public string Cell { get; set; }
         public string Email { get; set; }
-        public string Password{ get; set; }
-    }g
+        public string Password { get; set;  }
+    }
+    
 }
