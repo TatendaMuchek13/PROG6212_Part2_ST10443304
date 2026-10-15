@@ -19,6 +19,8 @@ namespace RaceDayApi.DTOs
 
         [Required]
         [MinLength(8)]// The length convension
+        [RegularExpression(@"^(?=.*\d)(?=.*[^a-zA-Z0-9]).*$",
+        ErrorMessage = "Password must contain at least one number and one symbol.")] //ADDED to have the password have at least a number and a symbol following an error message.
         public string Password { get; set; }
 
         [Required]
