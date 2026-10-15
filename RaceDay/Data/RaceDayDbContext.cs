@@ -18,7 +18,7 @@ namespace RaceDayApi.Data
         public DbSet<Result> Results { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
+        {//
             base.OnModelCreating(modelBuilder);
 
             // Stop deletes from cascading through the tables
