@@ -20,14 +20,14 @@ namespace RaceDayApi.Controllers
             _context = context;
         }
 
-        // GET: api/events  (any logged-in user)
+        // GET: api/events  (all logged-in user)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Event>>> GetEvents()
         {
             return await _context.Events.ToListAsync();
         }
 
-        // GET: api/events/1  (any logged-in user)
+        // GET: api/events/1  (all logged-in user)
         [HttpGet("{id}")]
         public async Task<ActionResult<Event>> GetEvent(int id)
         {
@@ -65,7 +65,7 @@ namespace RaceDayApi.Controllers
             return CreatedAtAction(nameof(GetEvent), new { id = newEvent.EventID }, newEvent);
         }
 
-        // PUT: api/events/1  (Organiser only, own events only)
+        // PUT: api/events/1  (Organiser only)
         [Authorize(Roles = "Organiser")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateEvent(int id, EventDto dto)
@@ -96,7 +96,7 @@ namespace RaceDayApi.Controllers
             return Ok(existingEvent);
         }
 
-        // DELETE: api/events/1  (Organiser only, own events only)
+        // DELETE: api/events/1  (Organiser only)
         [Authorize(Roles = "Organiser")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteEvent(int id)
