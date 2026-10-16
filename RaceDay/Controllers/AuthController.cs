@@ -24,9 +24,23 @@ namespace RaceDayApi.Controllers
             _config = config;
         }
 
-        // POST: api/auth/register
+        /// <summary>
+        /// Registers a new account as an Organiser or a Participant.
+        /// </summary>
+        /// <remarks>
+        /// Expects a JSON body with name, surname, cell, email, password and role.
+        /// The role must be "Organiser" or "Participant". The password must be at least
+        /// 8 characters and contain a number and a symbol. Only a hash of the password is stored.
+        /// </remarks>
+        /// <param name="dto">The registration details.</param>
+        /// <response code="200">The account was created.</response>
+        /// <response code="400">A field is missing or invalid, or the role is not valid.</response>
+        /// <response code="409">The email address is already registered.</response>
         [AllowAnonymous]
         [HttpPost("register")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
             if (dto.Role != "Organiser" && dto.Role != "Participant")
@@ -76,9 +90,23 @@ namespace RaceDayApi.Controllers
             return Ok("Registered successfully as " + dto.Role + ".");
         }
 
-        // POST: api/auth/login
+        /// <summary>
+        /// Logs a user in and returns a token for use on all other endpoints.
+        /// </summary>
+        /// <remarks>
+        /// Expects a JSON body with email and password. The response contains a token and the
+        /// user's role. Send the token in the Authorization header as "Bearer" followed by the token.
+        /// Tokens expire after 2 hours.
+        /// </remarks>
+        /// <param name="dto">The email and password.</param>
+        /// <response code="200">Login succeeded. Returns the token and role.</response>
+        /// <response code="400">The email or password is missing.</response>
+        /// <response code="401">The email or password is incorrect.</response>
         [AllowAnonymous]
         [HttpPost("login")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login(LoginDto dto)
         {
             string role = null;
@@ -130,25 +158,6 @@ namespace RaceDayApi.Controllers
             string jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
             return Ok(new { token = jwt, role = role });
-        }
-
-        
-
-        [Authorize]
-        [HttpGet("me")]
-        public IActionResult Me()
-        {
-            string id = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            string role = User.FindFirstValue(ClaimTypes.Role);
-
-            return Ok("You are user " + id + " with the role " + role + ".");
-        }
-
-        [Authorize(Roles = "Organiser")]
-        [HttpGet("organiser-only")]
-        public IActionResult OrganiserOnly()
-        {
-            return Ok("Welcome, organiser.");
         }
     }
 }

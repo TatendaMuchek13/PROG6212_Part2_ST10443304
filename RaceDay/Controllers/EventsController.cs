@@ -20,15 +20,32 @@ namespace RaceDayApi.Controllers
             _context = context;
         }
 
-        // GET: api/events  (all logged-in user)
+        /// <summary>
+        /// Gets all events.
+        /// </summary>
+        /// <remarks>Available to any logged-in user. Expects no request body.</remarks>
+        /// <response code="200">Returns the list of events.</response>
+        /// <response code="401">The user is not logged in.</response>
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<Event>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<IEnumerable<Event>>> GetEvents()
         {
             return await _context.Events.ToListAsync();
         }
 
-        // GET: api/events/1  (all logged-in user)
+        /// <summary>
+        /// Gets a single event by its id.
+        /// </summary>
+        /// <remarks>Available to any logged-in user. The id is taken from the address.</remarks>
+        /// <param name="id">The id of the event.</param>
+        /// <response code="200">Returns the event.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="404">No event has that id.</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(Event), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Event>> GetEvent(int id)
         {
             Event existingEvent = await _context.Events.FindAsync(id);
@@ -41,9 +58,25 @@ namespace RaceDayApi.Controllers
             return existingEvent;
         }
 
-        // POST: api/events  (Organiser only)
+        /// <summary>
+        /// Creates a new event owned by the logged-in Organiser.
+        /// </summary>
+        /// <remarks>
+        /// Organiser only. Expects a JSON body with eventName, description, dateOfEvent,
+        /// routeInfo (the location), distance (in km, between 0.1 and 1000) and eventType
+        /// (Run, Walk or Cycle). The organiser is taken from the token, not the body.
+        /// </remarks>
+        /// <param name="dto">The details of the new event.</param>
+        /// <response code="201">The event was created. Returns the new event.</response>
+        /// <response code="400">A field is missing or invalid.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">The user is not an Organiser.</response>
         [Authorize(Roles = "Organiser")]
         [HttpPost]
+        [ProducesResponseType(typeof(Event), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<Event>> CreateEvent(EventDto dto)
         {
             int organiserCode = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
@@ -65,9 +98,27 @@ namespace RaceDayApi.Controllers
             return CreatedAtAction(nameof(GetEvent), new { id = newEvent.EventID }, newEvent);
         }
 
-        // PUT: api/events/1  (Organiser only)
+        /// <summary>
+        /// Updates an event that the logged-in Organiser owns.
+        /// </summary>
+        /// <remarks>
+        /// Organiser only, and only for their own events. Expects the same JSON body as creating
+        /// an event. The event id is taken from the address.
+        /// </remarks>
+        /// <param name="id">The id of the event to update.</param>
+        /// <param name="dto">The new details of the event.</param>
+        /// <response code="200">The event was updated. Returns the updated event.</response>
+        /// <response code="400">A field is missing or invalid.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">The user is not an Organiser, or the event belongs to another Organiser.</response>
+        /// <response code="404">No event has that id.</response>
         [Authorize(Roles = "Organiser")]
         [HttpPut("{id}")]
+        [ProducesResponseType(typeof(Event), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateEvent(int id, EventDto dto)
         {
             Event existingEvent = await _context.Events.FindAsync(id);
@@ -96,9 +147,26 @@ namespace RaceDayApi.Controllers
             return Ok(existingEvent);
         }
 
-        // DELETE: api/events/1  (Organiser only)
+        /// <summary>
+        /// Deletes an event that the logged-in Organiser owns.
+        /// </summary>
+        /// <remarks>
+        /// Organiser only, and only for their own events. Expects no request body. An event that
+        /// still has categories or enrolments cannot be deleted.
+        /// </remarks>
+        /// <param name="id">The id of the event to delete.</param>
+        /// <response code="200">The event was deleted. Returns a confirmation message.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">The user is not an Organiser, or the event belongs to another Organiser.</response>
+        /// <response code="404">No event has that id.</response>
+        /// <response code="409">The event still has categories or enrolments.</response>
         [Authorize(Roles = "Organiser")]
         [HttpDelete("{id}")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> DeleteEvent(int id)
         {
             Event existingEvent = await _context.Events.FindAsync(id);
