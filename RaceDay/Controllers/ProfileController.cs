@@ -25,8 +25,21 @@ namespace RaceDayApi.Controllers
             return int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
         }
 
-        // GET: api/profile  (any logged-in user, own profile only)
+        /// <summary>
+        /// Gets the profile of the logged-in user.
+        /// </summary>
+        /// <remarks>
+        /// Available to both Organisers and Participants. Expects no request body. The profile is
+        /// found from the token, so a user can only ever see their own profile. The password is
+        /// never included.
+        /// </remarks>
+        /// <response code="200">Returns the profile, including the user's role.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="404">The account no longer exists.</response>
         [HttpGet]
+        [ProducesResponseType(typeof(ProfileDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ProfileDto>> GetMyProfile()
         {
             int userId = GetUserId();
@@ -69,8 +82,26 @@ namespace RaceDayApi.Controllers
             };
         }
 
-        // PUT: api/profile  (any logged-in user, own profile only)
+        /// <summary>
+        /// Updates the profile of the logged-in user.
+        /// </summary>
+        /// <remarks>
+        /// Available to both Organisers and Participants. Expects a JSON body with name, surname,
+        /// cell (exactly 10 digits) and email. The profile is found from the token, so a user can
+        /// only ever change their own profile. The email must not belong to another account.
+        /// </remarks>
+        /// <param name="dto">The new profile details.</param>
+        /// <response code="200">The profile was updated. Returns the updated profile.</response>
+        /// <response code="400">A field is missing or invalid.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="404">The account no longer exists.</response>
+        /// <response code="409">The email address already belongs to another account.</response>
         [HttpPut]
+        [ProducesResponseType(typeof(ProfileDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
         public async Task<ActionResult<ProfileDto>> UpdateMyProfile(UpdateProfileDto dto)
         {
             int userId = GetUserId();

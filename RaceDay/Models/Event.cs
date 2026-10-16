@@ -3,21 +3,36 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RaceDayApi.Models
 {
+    /// <summary>An event that participants can enter.</summary>
     [Table("Events")]
     public class Event
     {
-        
-      [Key] public int EventID { get; set; }
+        /// <summary>The id of the event.</summary>
+        [Key]
+        public int EventID { get; set; }
 
+        /// <summary>The code of the Organiser who owns the event.</summary>
         public int OrganiserCode { get; set; }
-        [ForeignKey("OrganiserCode")]
-        public Organiser? Organiser { get; set; }// references the Organiser table
 
+        [ForeignKey("OrganiserCode")]
+        public Organiser? Organiser { get; set; }
+
+        /// <summary>The name of the event.</summary>
         public string EventName { get; set; }
+
+        /// <summary>A short description of the event.</summary>
         public string Description { get; set; }
+
+        /// <summary>The date and time the event starts.</summary>
         public DateTime DateOfEvent { get; set; }
-        public string RouteInfo { get; set; }      // This will be the location
-        public double Distance { get; set; }       
-        public string EventType { get; set; }      // Run, Walk or Cycle
+
+        /// <summary>The location or route of the event.</summary>
+        public string RouteInfo { get; set; }
+
+        /// <summary>The distance in kilometres.</summary>
+        public double Distance { get; set; }
+
+        /// <summary>The type of event: Run, Walk or Cycle.</summary>
+        public string EventType { get; set; }
     }
 }
