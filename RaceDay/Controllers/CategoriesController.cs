@@ -146,11 +146,109 @@ namespace RaceDayApi.Controllers
 
             return CreatedAtAction(nameof(GetCategory), new { id = category.CateID }, category);
         }
-    } }
 
         /// <summary>
         /// Renames a category of an event that the logged-in Organiser owns.
         /// </summary>
         /// <remarks>
         /// Organiser only, and only for their own events. Expects a JSON body with the new
-        /// categoryName. A category cannot be
+        /// categoryName. A category cannot be given the same name as another category of the same event.
+        /// </remarks>
+        /// <param name="id">The id of the category.</param>
+        /// <param name="dto">The new name for the category.</param>
+        /// <response code="200">The category was renamed. Returns the updated category.</response>
+        /// <response code="400">A field is missing or invalid.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">The user is not an Organiser, or the event belongs to another Organiser.</response>
+        /// <response code="404">No category has that id.</response>
+        /// <response code="409">The event already has a category with that name.</response>
+        [Authorize(Roles = "Organiser")]
+        [HttpPut("{id}")]
+        [ProducesResponseType(typeof(Category), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> UpdateCategory(int id, UpdateCategoryDto dto)
+        {
+            Category category = await _context.Categories.FindAsync(id);
+
+            if (category == null)
+            {
+                return NotFound("Category not found.");
+            }
+
+            Event existingEvent = await _context.Events.FindAsync(category.EventID);
+
+            if (existingEvent.OrganiserCode != GetUserId())
+            {
+                return Forbid();
+            }
+
+            bool nameTaken = await _context.Categories
+                .AnyAsync(c => c.EventID == category.EventID
+                            && c.CateID != id
+                            && c.CategoryName == dto.CategoryName);
+
+            if (nameTaken)
+            {
+                return Conflict("This event already has a category with that name.");
+            }
+
+            category.CategoryName = dto.CategoryName;
+            await _context.SaveChangesAsync();
+
+            return Ok(category);
+        }
+
+        /// <summary>
+        /// Deletes a category of an event that the logged-in Organiser owns.
+        /// </summary>
+        /// <remarks>
+        /// Organiser only, and only for their own events. A category that already has
+        /// enrolments cannot be deleted.
+        /// </remarks>
+        /// <param name="id">The id of the category.</param>
+        /// <response code="200">The category was deleted.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">The user is not an Organiser, or the event belongs to another Organiser.</response>
+        /// <response code="404">No category has that id.</response>
+        /// <response code="409">The category has enrolments.</response>
+        [Authorize(Roles = "Organiser")]
+        [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            Category category = await _context.Categories.FindAsync(id);
+
+            if (category == null)
+            {
+                return NotFound("Category not found.");
+            }
+
+            Event existingEvent = await _context.Events.FindAsync(category.EventID);
+
+            if (existingEvent.OrganiserCode != GetUserId())
+            {
+                return Forbid();
+            }
+
+            bool hasEnrolments = await _context.Enrollments.AnyAsync(e => e.CateID == id);
+
+            if (hasEnrolments)
+            {
+                return Conflict("This category has enrolments and cannot be deleted.");
+            }
+
+            _context.Categories.Remove(category);
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+    }
+}
